@@ -15,14 +15,13 @@ doc = {
 
         # 'data' is a 'Mapper': it massages the raw input data into the document's format
         'data': {
-            'REMAP':     # REMAP instructs the Mapper to name outputs directly from inputs
-            {      
-             'name': 0,  #   our output dictionary will have a 'name' field taken from column 0
-             'hash': 1,  #   and a 'hash' field taken from column 1
-             'date.created': 2,
-             'comment': 3,
+            'REMAP': {   # REMAP instructs the Mapper to name outputs directly from inputs
+                'name': 0,  #   our output dictionary will have a 'name' field taken from column 0
+                'hash': 1,  #   and a 'hash' field taken from column 1
+                'date.created': 2,
+                'comment': 3,
             },
-            'from': 'whitelist.csv' # this field will simply be copied
+            'from_whitelist': True, # this field will simply be copied
         },
     },
 }

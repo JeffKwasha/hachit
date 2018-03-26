@@ -1,5 +1,4 @@
-from .secrets import ET_API_KEY
-
+import secrets
 doc= {
     'name': 'et_hash_dns',
     'id': 'hash',
@@ -9,7 +8,7 @@ doc= {
         'location' : {
             'url': lambda args: "https://api.emergingthreats.net/v1/samples/{}/dns".format(args.get('hash')),
             'headers': {
-                'Authorization': ET_API_KEY,
+                'Authorization': secrets.ET_API_KEY,
             },
         },
         'data': {

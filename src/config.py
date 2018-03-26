@@ -108,16 +108,14 @@ class Config:
         import input
         for path in cls.get('INPUT_DIR').split(os.pathsep) + cls.get('PLUGIN_DIR').split(os.pathsep):
             path = os.path.abspath(path)
-          #  dir  = os.path.dirname(path)
-          #  if dir not in sys.path: sys.path.append(dir)
+            path+= os.sep if os.path.isdir(path) else ''
+            dir  = os.path.dirname(path)
+            if dir not in sys.path: sys.path.insert(1, dir)
             if os.path.isdir(path):
-                #if path not in sys.path: sys.path.append(path)
                 for filename in readdir(path, endswith='.py'):
                     cls.load_plugin(os.path.join(path, filename))
             elif os.path.isfile(path):
                 dir = os.path.dirname(path)
-                #if dir not in sys.path: sys.path.append(dir)
-                #cls.load_plugin(os.path.basename(path))
                 cls.load_plugin(path)
 
     @classmethod
