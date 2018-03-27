@@ -81,7 +81,6 @@ def counter():
 ```
 We can now make requests to '/whitelist' by providing a hash.
 
-(NOTE: 'localhost:5000' is the default 'development' flask webserver from running `python3 flask_app.py`.)
 `> curl localhost:5000/whitelist?hash=41e25e514d90e9c8bc570484dbaff62b`
 Returns:
 ```
