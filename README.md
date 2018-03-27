@@ -65,7 +65,7 @@ doc={'name':'whitelist',	# a Doc's name is it's api path.
             # 'normal' fields are simply added to the result
             'from_whitelist.csv': True,
             'counter': counter(),                               # THIS, IS, PYTHON
-            'date.retreived': lambda v: str(datetime.utcnow()), # yes, we can
+            'date.retrieved': lambda v: str(datetime.utcnow()), # yes, we can
             },
     },
     cache=None,
@@ -91,7 +91,7 @@ Returns:
   "from": "whitelist.csv",
   "hash": "41e25e514d90e9c8bc570484dbaff62b",
   "name": "cmd.exe",
-  "date.retreived": '2018-03-21 18:52:18.633003',
+  "date.retrieved": '2018-03-21 18:52:18.633003',
   "counter": 1,
 }
 ```
