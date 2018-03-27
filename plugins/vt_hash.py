@@ -10,6 +10,11 @@ def checkTrustedVerdicts(dic):
     if l and len(v) == len(dic):
        return 'Valid signatures chained to a trusted Microsoft cert'
 
+# This little function solves a little conundrum for us.
+# The source data contains a list of dictionaries, but they aren't all the same,
+# and we're not sure if the one we want will always at the same index.
+# So, by returning the first dictionary with a 'codeview' 
+# we are able to pick the right one and to continue to drill down our input data
 def find_type_str(li):
     for i in li:
         if i.get('codeview'):

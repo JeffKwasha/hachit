@@ -23,15 +23,15 @@ All your plugins live in one directory, so version control is easy.
 You can even import data from another plugin, to tweak the structure, enrich the data with other sources, or perform additional processing!
 
 ## Is it Easy?
-Hachit is Python 3 and uses [Flask](http://flask.pocoo.org/) and [Requests](http://docs.python-requests.org/en/master/).<br>
-Hachit's elasticcache plugin requres [elasticsearch-py](http://docs.python-requests.org/en/master/) and connects to an elasticsearch instance on localhost.<br>
+Hachit is written in Python 3 and uses [Flask](http://flask.pocoo.org/) and [Requests](http://docs.python-requests.org/en/master/).<br>
+Hachit's elasticcache plugin requires [elasticsearch-py](http://docs.python-requests.org/en/master/) and connects to an elasticsearch instance on localhost.<br>
 For test or one-off purposes you can run it with `cd hachit/src; python3 flask_app.py`<br>
 For production you'll probably want a performant webserver like nginx + gunicorn or uwsgi.<br>
 Point your wsgi compatible server at `src/flask_app.py:app`
 
 Presently there's not much to configure, but in the future Hachit will take its configuration from /etc/hachit/hachit.yaml
 
-Once it works you just need to define a few 'document types' with plugins.
+Once it works you just need to define your 'document types' with plugins.
 
 ## Plugins
 A Plugin defines a 'Doc' (think ElasticSearch Document Type).
@@ -40,6 +40,15 @@ Inputs can have a 'data' parameter that describes how to present the retrieved d
 
 ```python
 from datetime import datetime
+
+def counter(*_):
+    global count
+    try:
+        count += 1
+    except:
+        count = 1
+    return count
+
 doc={'name':'whitelist',	# a Doc's name is it's api path.
     'inputs': {             # Here we use a dict to define a single input.
         'type': 'csv'       # currently HACHIT supports 'REST'ful web apis and 'csv' files
@@ -64,24 +73,16 @@ doc={'name':'whitelist',	# a Doc's name is it's api path.
                 },
             # 'normal' fields are simply added to the result
             'from_whitelist.csv': True,
-            'counter': counter(),                               # THIS, IS, PYTHON
+            'counter': counter,                                 # THIS, IS, PYTHON
             'date.retrieved': lambda v: str(datetime.utcnow()), # yes, we can
             },
     },
     cache=None,
 }
-
-def counter():
-    global count
-    try:
-        count += 1
-    except:
-        count = 1
-    return count
 ```
 We can now make requests to '/whitelist' by providing a hash.
 
-`> curl localhost:5000/whitelist?hash=41e25e514d90e9c8bc570484dbaff62b`
+`> curl localhost:5000/whitelist?hash=41e25e514d90e9c8bc570484dbaff62b`<br>
 Returns:
 ```
 {

@@ -12,9 +12,12 @@ Current Goals for v1.0:
 		* neighbor data files
 * Prevent plugin cycles
 * display helpful errors
+* Bugs:
+	* counter(\*\*kwargs)
 
 Future Features:
 * merge results instead of 'dict.update()'
+* automatic look ahead for resolving 'drill down' REMAPs - possibly by looping and checking the recursive return value
 * Cache Ageing and updates
 * Rate limiting
 * Better error messages for plugins

@@ -3,9 +3,18 @@
 # NOTE: 'doc' is a magic variable that is used to build a Doc instance `Doc( **module.doc )`
 #       This eliminates any need for us to 'from doc import Doc', which is good.
 
+from datetime import datetime
+
+def counter(*args):
+    global count
+    try:
+        count += 1
+    except:
+        count = 1
+    return count
+
 doc = {
     'name':'whitelist',
-    'id': 'hash',
     'inputs':{
         'name' : 'whitelist_csv',   # again, a unique name is always required
         # csv_input simply wants to read a file. So 'location' is just a file path.
@@ -22,6 +31,8 @@ doc = {
                 'comment': 3,
             },
             'from_whitelist': True, # this field will simply be copied
+            'counter': counter,                                 # THIS, IS, PYTHON
+            'date.retrieved': lambda v: str(datetime.utcnow()), # yes, we can
         },
     },
 }
