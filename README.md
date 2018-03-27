@@ -88,7 +88,7 @@ Returns:
 {
   "comment": "Found in HKLM\\SYSTEM\\CurrentControlSet\\Control\\SafeBoot\\AlternateShell.",
   "date.created": "2018-02-20T11:23:00Z",
-  "from": "whitelist.csv",
+  "from_whitelist.csv": True,
   "hash": "41e25e514d90e9c8bc570484dbaff62b",
   "name": "cmd.exe",
   "date.retrieved": '2018-03-21 18:52:18.633003',

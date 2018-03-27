@@ -13,7 +13,7 @@ Current Goals for v1.0:
 * Prevent plugin cycles
 * display helpful errors
 * Bugs:
-	* counter(\*\*kwargs)
+	* counter(\*\*kwargs) - somehow this causes api_input to fail \_test()
 
 Future Features:
 * merge results instead of 'dict.update()'

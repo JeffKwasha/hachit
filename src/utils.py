@@ -163,7 +163,7 @@ def eval_field(dst, src, args):
         return dst
     if src_t is list:
         return [ eval_field(dst, i, args) for i in src ]
-    if src_t in (str, int, float, bytes, tuple):
+    if src_t in (str, int, float, bytes, tuple, bool):
         return src
     return dst
 
