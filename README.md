@@ -12,20 +12,21 @@ Table of Contents
 - [Installation](#installation)
 
 ## Why
-You need a 3rd party web api to structure data your way.<br>
-A application you can't or don't want to change makes tons of duplicate queries.<br>
-You need data from multiple sources but it's hard or impossible to use query more than one.<br>
-Are you sick of having to maintain gobs of web api client scripts to solve these problems?
+Troublesome structured data provided by a 3rd party.<br>
+Tons of duplicate queries made by an application you can't (or don't want to) change.<br>
+Multiple source data is hard to obtain or aggregate in your use case.<br>
+Maintenance of data client scripts is itself a problem?
 
-Hachit lets you build custom web apis in minutes with simple declaritive python data structures.<br>
-Your API can combine data from multiple requests, cache the data in elasticsearch, and return it in whatever structure you like.
-All your plugins live in one directory, so version control is easy.
+With Hachit you can build a custom web api in minutes using simple declarative python data structures.<br>
+Your API can combine data from multiple sources, cache the data in elasticsearch, and return it in whatever structure you like.
+All your plugins live in one directory, so version control is easy. 
+You can even import data from another plugin, to tweak the structure, enrich the data with other sources, or perform additional processing!
 
 ## Is it Easy?
 Hachit is Python 3 and uses [Flask](http://flask.pocoo.org/) and [Requests](http://docs.python-requests.org/en/master/).<br>
 Hachit's elasticcache plugin requres [elasticsearch-py](http://docs.python-requests.org/en/master/) and connects to an elasticsearch instance on localhost.<br>
 For test or one-off purposes you can run it with `cd hachit/src; python3 flask_app.py`<br>
-For production you'll probably want a performant webserver like nginx + uwsgi or nginx + gunicorn.<br>
+For production you'll probably want a performant webserver like nginx + gunicorn or uwsgi.<br>
 Point your wsgi compatible server at `src/flask_app.py:app`
 
 Presently there's not much to configure, but in the future Hachit will take its configuration from /etc/hachit/hachit.yaml
@@ -34,7 +35,7 @@ Once it works you just need to define a few 'document types' with plugins.
 
 ## Plugins
 A Plugin defines a 'Doc' (think ElasticSearch Document Type).
-It defines one or more **inputs** and optionally a **cache**.
+It has a **name** which becomes its API path, and it defines one or more **inputs** and optionally a **cache**.
 Inputs can have a 'data' parameter that describes how to present the retrieved data.
 
 ```python
@@ -80,6 +81,7 @@ def counter():
 ```
 We can now make requests to '/whitelist' by providing a hash.
 
+(NOTE: 'localhost:5000' is the default 'development' flask webserver from running `python3 flask_app.py`.)
 `> curl localhost:5000/whitelist?hash=41e25e514d90e9c8bc570484dbaff62b`
 Returns:
 ```
