@@ -6,6 +6,7 @@ from config import Config
 from mapper import Mapper
 from exceptions import NotFound
 from pprint import pformat
+from utils import is_sequence
 
 h_logger = Config.getLogger('hachit')
 l_logger = Config.getLogger(__name__)
@@ -21,7 +22,12 @@ l_logger = Config.getLogger(__name__)
 
 # TODO - have imported locations register their types with Input
 class Input:
-    """ An Input defines a way to import and lookup data.  Like a doc it supports query() and get(). 
+    """ An Input defines a way to import and lookup data.  
+        query() and get() are the primary methods of requesting data
+    
+        Input itself is abstract, and Input.__new__() *magically returns the 'right' subclass*.
+        so Input(kwargs) could return a CsvInput or ApiInput or ... or an Exception
+
         REST - WebApi (RESTful webapi data sources )
         CSV - CsvFile
         DB  - DBInput ( Future )
@@ -89,13 +95,11 @@ class Input:
         if not cls.subtypes:
             l_logger.error("A location must define its types: {}".format(cls.name))
             raise ValueError("{} has no 'types', unable to register".format(cls.name))
-    
-        t = type(cls.subtypes)
-        if t in (list, tuple):          # a subclass can specify multiple 'types' - ODBC subclass might accept DB2/sqlite/mysql ...
-            for subtype in cls.subtypes:   # "subtype" is some immutable unique identifier, probably strings: 'csv', 'sqlite', 'webapi' or some type identifier
-                Input.types[subtype]= cls
-        elif t in (str, int):
-            Input.types[cls.subtypes]= cls
+   
+        if not is_sequence(cls.subtypes):
+            cls.subtypes = (cls.subtypes, )
+        for subtype in cls.subtypes:
+            Input.types[subtype]= cls
 
         h_logger.info("Input: {} registered for {}".format(cls.__name__, cls.subtypes))
         return True
@@ -118,10 +122,12 @@ class Input:
 
     @classmethod
     def validate(cls, dic, errors=None):
-        """ validate is used to 'autodetect' an Input subclass given a dict.
+        """ validate 'autodetects' an Input subclass for a dict.
             return True if dic is valid for your subclass
             use errors[cls.__name__] = REASON STRING to help users create valid docs
         """
+        if errors:
+            errors[cls.__name__]= "Input's default validate doesn't allow autodetection"
         return False
 
     # This generic implementation assumes args contain an ID and run the instance's get()

@@ -139,8 +139,12 @@ class testMapper(unittest.TestCase):
     def test_remap(self):
         """ see if mapper properly discards and remaps"""
         source = { "foo": [ 1, 2 ], 'bar' : { 'bar1': 1, 'bar2':2 }, 'baz' : ['a', 'bunch', 'of', 'strings'] }
-        conf = Mapper({ 'REMAP': { "fooc" : 'foo', 'bar1c' : ( 'bar', 'bar1' ), 'bazzes': ('baz', lambda v: ';'.join(v)) }})
-        output = search(conf, source)
-        self.assertEqual(output, {'bar1c': 1, 'bazzes': 'a;bunch;of;strings', 'fooc': [1, 2]})
+        mapp = Mapper({ 'REMAP': { "fooc" : 'foo', 'bar1c' : ( 'bar', 'bar1' ), 'bazzes': ('baz', lambda v: ';'.join(v)), 'invalid': 'nope' }, 'INVALID': ''})
+        output = mapp(source)
+        self.assertEqual(output, {'bar1c': 1, 'bazzes': 'a;bunch;of;strings', 'fooc': [1, 2], 'invalid':''})
+
+class testCache(unittest.TestCase):
+    def test_elasticcache(self):
+        pass
 
 unittest.main()

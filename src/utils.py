@@ -15,8 +15,9 @@ NoneType = type(None)
 FuncType = type(lambda v: v)
 
 FreeSpace = namedtuple('FreeSpace', ['bytes', 'nodes'] )
-ISOFORMAT = '%Y-%m-%dT%H:%M:%SZ'
 
+ISO_DATE_FORMAT= '%Y-%m-%dT%H:%M:%SZ'
+DEF_DATE_FORMAT = '%Y-%m-%d %H:%M:%S'
 
 try:
     basestring
@@ -33,7 +34,8 @@ DURATIONS= {'US': 0.000001,
             'M' : 60, 
             'H' : 60*60,
             'D' : 60*60*24,
-            'W' : 60*60*24*7, }
+            'W' : 60*60*24*7, 
+            'Y' : 60*60*24*365.2422,}
 RX_DURATION = re.compile(r'|'.join([r'(?:(?P<{}>[\d.]+)\s*'
                                     r'(?:{}|{}))'.format(k, k, k.lower())
                                     for k,v in DURATIONS.items()]))
@@ -167,24 +169,24 @@ def eval_field(dst, src, args):
         return src
     return dst
 
-def searchStr(needle, haystack):
+def searchStr(needle, haystack, invalid=None):
     # str : (lambda k,v: v.get(k) if type(v) is dict else v.index(k)),
     haytype = type(haystack)
     if haytype is dict:
-        return haystack.get(needle)
+        return haystack.get(needle, invalid)
     elif haytype in (list, tuple):
         raise ValueError("Don't use a string '{}', to index a list: {} ".format(needle, haystack))
     elif isinstance(haystack, tuple):
         # haystack is_not tuple, but isinstance, therefore namedtuple
-        return getattr(haystack, needle, None)
+        return getattr(haystack, needle, invalid)
 
-def search_all(needle, *haystacks):
+def search_all(needle, *haystacks, invalid=None):
     from copy import copy
     haystack = copy(haystacks[0])
     for i in haystacks[1:]: haystack.update(i)
-    return search(needle, haystack)
+    return search(needle, haystack, invalid)
 
-def search(needle, haystack):
+def search(needle, haystack, invalid=None):
     from mapper import Mapper
     types = {
         str: searchStr,
@@ -198,63 +200,61 @@ def search(needle, haystack):
     try:
         t = types[ndl_t]
         logger.debug("search: {}({}) on {}".format(t, needle,haystack))
-        return t(needle, haystack)
+        return t(needle, haystack, invalid)
     except KeyError:
         if callable(needle):
             return needle(haystack)
         elif isinstance(needle, tuple):
             # needle is a special tuple, a namedtuple
-            logger.debug("search: {}({}) on {}".format(t, needle,haystack))
-            return searchNamedTuple(needle, haystack)
+            return searchNamedTuple(needle, haystack, invalid)
 
-def searchNamedTuple(needle, haystack):
+def searchNamedTuple(needle, haystack, invalid=None):
     logger.error("I haven't implemented namedtuples yet. They can't easily be specified.")
     pass
 
-def searchInt(needle, haystack):
-    """ needle is an Int. Haystack better be iterable """
+def searchInt(needle, haystack, invalid=None):
+    """ needle is an Int. Haystack better be indexable """
     try:
         return haystack[needle]
     except IndexError:
-        return None
+        return invalid
 
-def searchFunction(func, haystack):
+def searchFunction(func, haystack, invalid=None):
     """ an almost useless wrapper around a function """
-    logger.debug("searchFunction {}( {} )".format(func, haystack))
-    return func(haystack)
+    return func(haystack) or invalid
 
-def searchTuple(needle, haystack):
+def searchTuple(needle, haystack, invalid=None):
     """ needle is a iterable of haystack's progeny ie: needle=('a', 'b', 'c'), haystack={ 'a' : { 'b' : { 'c' : "RETURN VAL" }}}
         return a value or None
     """
     assert(type(needle) is tuple)
     current = haystack
     for n in needle:
-        if None in (n, current):
+        if not n or not current or invalid in (n, current):
             break
 
         curr_t = type(current)
         ndl_t = type(n)
 
         if ndl_t not in (int, str):
-            current = search(n, current)
+            current = search(n, current, invalid)
         elif curr_t in (list, tuple):
             if ndl_t is int and n < len(current):
                 current = current[n]
             else:
-                return None
+                return invalid
         elif curr_t is dict:
-            current = current.get(n, None)
+            current = current.get(n, invalid)
     
     if needle[-1] == n:
         return current
-    return None
+    return invalid
 
-def searchDict(needle, haystack):
+def searchDict(needle, haystack, invalid=None):
     rv = {}
     for k,v in needle.items():
-        rv[k] = search(v, haystack)
-    return rv
+        rv[k] = search(v, haystack, invalid)
+    return rv or invalid
 
 def recurse_update(a, b, ignore_none = False):
     """ add everything in b to a
@@ -275,6 +275,54 @@ def recurse_update(a, b, ignore_none = False):
         else:
             a[key] = bVal if bVal or not ignore_none else a[key]
     return a
+
+_date_tr = {
+    r'%%': r'%',
+    r'%Y': r'[12][90]\d\d',
+    r'%m': r'[01]\d',
+    r'%d': r'[0-3]\d',
+    r'%H': r'[0-2]\d',
+    r'%I': r'[01]\d',
+    r'%M': r'[0-5]\d',
+    r'%S': r'[0-5]\d',
+    r'%a': r'(Sun|Mon|Tue|Wed|Thu|Fri|Sat)',
+    r'%w': r'[0-6]',
+    r'%b': r'(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)',
+    r'%y': r'\d\d',
+    r'%j': r'[0-3]\d\d',
+    r'%W': r'[0-5]\d',
+}
+def build_date_formats(s):
+    """ Given a strftime format string, Build a list of tuples that allow us to quickly select the right format for a potential date string"""
+    if not is_sequence(s):
+        s = (s,)
+    rv = []
+    for fmt in s:
+        rgx = fmt
+        for k,v in _date_tr.items():
+            rgx = re.sub(k, v, rgx)
+        rv.append((re.compile(r'^'+rgx), fmt))
+    return rv
+
+_date_fmts = build_date_formats([DEF_DATE_FORMAT, ISO_DATE_FORMAT])
+def date_from_str(s, format=_date_fmts):
+    """ given a date string s, and a format, return a date.
+        format can be a strftime format string or the return value from build_date_formats
+    """
+    if type(format) is str:
+        try:
+            return datetime.strptime(s, format)
+        except ValueError: return
+
+    for rx,fmt in format:
+        try:
+            if(rx.match(s)): return datetime.strptime(s, fmt)
+        except ValueError:  pass
+    return s
+
+def double_time(iso_date_str, mult=1.0):
+    """ Returns a datetime as far from now, as now is from input date """
+    return datetime.utcnow() + mult * (datetime.utcnow() - date_from_str(iso_date_str))
 
 def file_lock(f, timeout=2):
     """ True if f was locked, False otherwise """

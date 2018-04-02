@@ -15,15 +15,6 @@ logger = Config.getLogger(__name__)
 # urlFunction -> bp
 # args -> common_args
 
-# cache acts like a dict (get, update)
-#   query has 
-#       input fields and a remap to doc fields
-#   Cache
-#       get() id lookup 
-#       query() fields lookup
-#   inputs have
-#       get() id based lookup
-#       query() ??
 class Doc:
     _all = {}
     def __init__(self, name, inputs, id=None, cache=None, **kwargs):
@@ -82,8 +73,7 @@ class Doc:
         # at some point this may be needed, it's from inputs()
 
     def query(self, args):
-        # could return an iterator of results ?!?
-        # TODO add simple cache update frequency logic
+        # IDEA: could return an iterator of results ?!?
         """ query cache??
 
             if an arg allows input.get() ??
@@ -93,7 +83,6 @@ class Doc:
         if self.cache and self.cache.id_name in args:
             rv = self.cache.get(args[self.cache.id_name])
             if rv:
-                #rv[Config.get("CACHED_KEY")] = rv['LAST_UPDATE']
                 return rv
 
         rv = {}
@@ -111,8 +100,6 @@ class Doc:
         """ given an index value return a document
             get doesn't know how to pick from multiple arguments, so every input better use the same field 
         """
-        # TODO - check expiration?  should cache expire or should inputs? different inputs would have different expiration rules
-        #      Expiration could be a per-input Doc-managed property. Cache just returns a hit, Doc handles partial expiration/update.
         self.query_count += 1
         if type(_id) is str:
             if self.cache:
@@ -166,10 +153,10 @@ def _test():
     import inputs.cache
     d = Doc(
         name='testDoc',
+        id='hash',
         inputs=[{
             'name': 'white',
             'location' : './test/white.csv',
-            'id': 'hash',
             'data': {
                 'REMAP': {
                     'name': 0,
@@ -182,7 +169,7 @@ def _test():
         cache={
             'type':'elasticcache',
             'location': 'localhost',
-            'id': 'hash',
+            'expire-date': '1y',
         },
     )
     return d.get('41e25e514d90e9c8bc570484dbaff62b')['name'] == 'cmd.exe'

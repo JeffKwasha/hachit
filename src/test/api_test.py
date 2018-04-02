@@ -1,4 +1,5 @@
 from inputs import api_input
+from utils import date_from_str
 
 TrustedMSRootThumbprints = ('foo', )
 def checkTrustedVerdicts(dic):
@@ -30,7 +31,7 @@ doc={'name':'api_test',
         },
         'data': {
             'REMAP': {
-                "vt_file_scan_date"         : 'scan_date',
+                "vt_file_scan_date"         : ('scan_date', lambda v: date_from_str(v)),
                 "vt_file_first_seen"        : 'first_seen',
                 "vt_file_last_seen"         : 'last_seen',
                 "vt_file_times_submitted"   : 'times_submitted',

@@ -14,7 +14,7 @@ def count_reset_monthly(self):
 
 class ApiInput(Input):
     subtypes=('REST')
-    __slots__= ['count', 'query_limit', 'last_query_date', 'count_reset_func']
+    __slots__= ['count', 'query_limit', 'last_query_date', 'count_reset_func'] # TODO - Do we need a countable query parent?
     def __init__(self, **kwargs):
         if not hasattr(self, 'location'):
             super().__init__(**kwargs)

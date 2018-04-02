@@ -48,6 +48,7 @@ class Config:
         'LOG_FILE_LEVEL': 'info',
         'PLUGIN_DIR': '../plugins',
         'INPUT_DIR': './inputs',    # probably shouldn't change INPUT_DIR, if you do, csv_input._test will lose track of white.csv
+        'TEST_ON_LOAD': True,       # every input or plugin can have a _test() method.  This helps identify problems, but it does slow restarts a bit.
     }
     _default = config.copy()
     _redis = None
@@ -133,7 +134,6 @@ class Config:
         basename = os.path.basename(filename)
         module_name = package + '.' if package else ''
         module_name += os.path.splitext(basename)[0]
-        logger.log(77,"load_plugin: <{}> as {}".format(filename, module_name))
         if basename == '__init__.py':
             return
         elif module_name in cls.modules:
@@ -143,12 +143,10 @@ class Config:
             logger.info("loading {}".format(filename))
             if os.sep in filename:
                 path = os.path.dirname(filename)
-                logger.log(100,"chdir {}".format(path))
                 os.chdir(path)
             try:
                 cls.modules[module_name] = cls._load_module(module_name, filename)
             finally:
-                logger.log(100,"chdir {}".format(cls.cwd))
                 os.chdir(cls.cwd)
         return cls.modules[module_name]
 
@@ -156,11 +154,15 @@ class Config:
     def _load_module(cls, module_name, filepath):
         """ a helper function to make load_plugin pretty. Assumes 'module_name' is in sys.path"""
         global logger
-        logger.log(44, 'pwd: {}'.format(os.getcwd()))
         spec = spec_from_file_location(module_name, filepath)
         module = module_from_spec(spec)
+        # TODO - exec module can fail and really muck things up.
         spec.loader.exec_module(module)
-        if getattr(module, '_test', None) and ( type(module._test) is FuncType ):
+        # TODO - testing a module can fail and really muck things up.
+        if (    Config.get('TEST_ON_LOAD') 
+            and getattr(module, '_test', None) 
+            and type(module._test) is FuncType
+           ):
             module._test_result = module._test()
             if module._test_result == SUCCESS:
                 logger.info("Imported and tested {} from {}".format(module.__name__, module_name))

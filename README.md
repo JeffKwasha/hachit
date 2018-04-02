@@ -1,8 +1,8 @@
 HACHIT: Hachit is an Aggregating Caching Hierarchical Information Tool
 --------
 
-Hachit provides an API middleman that simplifies getting and massaging data from multiple sources.<br>
-Hachit's API is defined by little python plugins that describe how data is retreived and presented.
+Hachit is a data middleman that simplifies getting and massaging data from multiple sources.<br>
+Hachit's RESTful API is defined by little python plugins that describe how data is retrieved and presented.
 
 Table of Contents
 - [Why](#why)
@@ -101,9 +101,10 @@ Returns:
 * Caches upstream API usage
 
 ## Installation
-1. Install and Run ElasticSearch
-2. `pip install flask requests`
-3. `python3.6 flask_app.py`
+1. Install and start ElasticSearch
+1. Install python3.6 or newer
+1. Install required modules: `pip install flask requests pyaml`
+1. Test hachit `python3.6 flask_app.py` (hachit runs a few basic tests as it loads)
 
 To really improve things, use a real webserver stack like nginx + gunicorn:
 

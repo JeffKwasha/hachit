@@ -55,7 +55,7 @@ class Mapper:
     Mapper constant values can be lookedup/assigned like a dict
     Mapper constant values can be a function to execute on the data, which means the function can alter the data at will.
     """
-    __slots__ = ('remap', 'discard', 'index', 'types', 'fields')
+    __slots__ = ('remap', 'discard', 'index', 'types', 'fields', 'invalid')
 
     def __init__(self, dic, data=None):
         logger.debug("Initializing {} from {}".format(self.__class__.__name__, dic))
@@ -67,6 +67,7 @@ class Mapper:
             self.discard = dic.pop('DISCARD', None)# fields you don't want
             self.index   = dic.pop('INDEX', None)  # index is reserved for future elasticsearch magicality
             self.types   = dic.pop('TYPES', None)  # types is reserved for future elasticsearch magicality
+            self.invalid = dic.pop('INVALID', None)  # invalid defines REMAP's default invalid value.
             self.fields  = dic          # fields are simply assigned values ie: return value(data) if callable(value) else value.
         elif dic_t in (str, int, float):
             self.fields = dic
@@ -106,7 +107,7 @@ class Mapper:
         from utils import search
         # remap the input data (effectively deleting anything not listed)
         if self.remap:
-            rv = search(self.remap, data)
+            rv = search(self.remap, data, invalid=self.invalid)
         elif data:
             rv = deepcopy(data)
         else:
