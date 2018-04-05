@@ -7,7 +7,6 @@ from mapper import Mapper
 from doc import Doc
 Config._setup_loggers(verbosity=99)
 
-
 class off_testConfig(unittest.TestCase):
     def test_load(self):
         return 
@@ -108,13 +107,11 @@ def mergeAtoms(*args):
 class testInput(unittest.TestCase):
     def test_apiInput(self):
         """ load api_test.py and check the results """
+        Config.load_plugin('inputs/api_input.py')
         module = Config.load_plugin('test/api_test.py')
         doc = Doc.from_url("api_test")
-        result = doc.query( { 'hash' : '41e25e514d90e9c8bc570484dbaff62b' } )
-        # This URL is available on the public API, but the 'analysis' number will occasionally change
-        self.assertEqual( result.get('vt_file_permalink')[:105],
-                         'https://www.virustotal.com/file/e6c49f7ce186dc4c9da2c393469b070c0f1b95a01d281ae2b89538da453d1583/analysis/1520818583/'[:105]
-                        )
+        result = doc.query( { 'page' : 1 } )
+        self.assertEqual( search( ('reqres_ids', 'name'), result), "George Bluth")
                 
     def test_csvInput(self):
         """ load csv_test.py and check the results """
@@ -132,9 +129,10 @@ class testMapper(unittest.TestCase):
 
     def test_eval(self):
         """ see if mapper properly uses fields """
-        m = Mapper({ 'REMAP': {'F': 'foo', 'B':('bar', 'bar2')}, 'foo': 'bar' , 'twenty-three': 23, 'list': ['a','b']})
-        r = search(m, {'foo': 'F', 'bar': {'bar2': 'B', 'zip': 'Z'}})
-        self.assertEqual({'F':'F', 'foo':'bar', 'B': 'B', 'twenty-three': 23, 'list':['a','b']}, r)
+        data = {'foo': 'F', 'bar': {'bar2': 'B', 'zip': 'Z'}}
+        m = Mapper({ 'REMAP': {'F': 'foo', 'B':('bar', 'bar2', lambda v: v.lower())}, 'field1': 'value1' , 'Fb': lambda v: {v.get('F') : v.get('B')}, 'alist': ['a','b']})
+        expected = {'F':'F', 'B': 'b', 'field1':'value1', 'Fb': {'F':'b'}, 'alist':['a','b']}
+        self.assertEqual(expected, search(m, data))
 
     def test_remap(self):
         """ see if mapper properly discards and remaps"""
@@ -148,3 +146,5 @@ class testCache(unittest.TestCase):
         pass
 
 unittest.main()
+
+

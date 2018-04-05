@@ -1,3 +1,4 @@
+from itertools import zip_longest
 from datetime import datetime, timedelta
 from fcntl import flock, LOCK_EX, LOCK_NB
 from collections import OrderedDict, Mapping, namedtuple
@@ -16,8 +17,9 @@ FuncType = type(lambda v: v)
 
 FreeSpace = namedtuple('FreeSpace', ['bytes', 'nodes'] )
 
-ISO_DATE_FORMAT= '%Y-%m-%dT%H:%M:%SZ'
-DEF_DATE_FORMAT = '%Y-%m-%d %H:%M:%S'
+ES_DATE_FORMAT = '%Y-%m-%dT%H:%M:%S'    # elasticsearch-py converts dates to this
+PY_DATE_FORMAT = '%Y-%m-%d %H:%M:%S'    # Python stringifies dates like this
+ISO_DATE_FORMAT= '%Y-%m-%dT%H:%M:%SZ'   # if we want to be specific, use this
 
 try:
     basestring
@@ -230,7 +232,7 @@ def searchTuple(needle, haystack, invalid=None):
     assert(type(needle) is tuple)
     current = haystack
     for n in needle:
-        if not n or not current or invalid in (n, current):
+        if not current or current is invalid:
             break
 
         curr_t = type(current)
@@ -253,7 +255,17 @@ def searchTuple(needle, haystack, invalid=None):
 def searchDict(needle, haystack, invalid=None):
     rv = {}
     for k,v in needle.items():
-        rv[k] = search(v, haystack, invalid)
+        result = search(v, haystack, invalid)
+        if type(k) is tuple:
+            if not is_sequence(result):
+                result = (result,)
+            if len(k) <= len(result):
+                rv.update(dict(zip(k,result)))
+            else:
+                rv.update(dict(zip_longest(k, result, fillvalue=invalid)))
+        else:
+            rv[k] = result
+
     return rv or invalid
 
 def recurse_update(a, b, ignore_none = False):
@@ -301,14 +313,16 @@ def build_date_formats(s):
         rgx = fmt
         for k,v in _date_tr.items():
             rgx = re.sub(k, v, rgx)
-        rv.append((re.compile(r'^'+rgx), fmt))
+        rv.append((re.compile(rgx), fmt))
     return rv
 
-_date_fmts = build_date_formats([DEF_DATE_FORMAT, ISO_DATE_FORMAT])
+_date_fmts = build_date_formats([ES_DATE_FORMAT, PY_DATE_FORMAT])
 def date_from_str(s, format=_date_fmts):
     """ given a date string s, and a format, return a date.
         format can be a strftime format string or the return value from build_date_formats
     """
+    if type(s) is not str:
+        return s
     if type(format) is str:
         try:
             return datetime.strptime(s, format)
@@ -316,7 +330,8 @@ def date_from_str(s, format=_date_fmts):
 
     for rx,fmt in format:
         try:
-            if(rx.match(s)): return datetime.strptime(s, fmt)
+            m = rx.match(s)
+            if m: return datetime.strptime(m.group(0), fmt)
         except ValueError:  pass
     return s
 

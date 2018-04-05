@@ -50,7 +50,7 @@ def counter(*_):
     return count
 
 doc={'name':'whitelist',	# a Doc's name is it's api path.
-    'inputs': {             # Here we use a dict to define a single input.
+    'inputs': [{            # Here we use a dict to define a 'csv' input.
         'type': 'csv'       # currently HACHIT supports 'REST'ful web apis and 'csv' files
         
         # a unique name is required. This prevents duplicates and allows re-use
@@ -65,18 +65,20 @@ doc={'name':'whitelist',	# a Doc's name is it's api path.
         # 'data' uses a 'Mapper' to massage our csv's fields into common fields in this 'Doc'
         'data': {
             #REMAP instructs the Mapper to make output fields directly from inputs
-            'REMAP': {      # Our input data arrives as tuples, which are indexed, so...
+            'REMAP': {      # Our input data arrives as tuples, which are integer indexed
                 'name': 0,  # output a 'name' field taken from column 0
                 'hash': 1,  # output a 'hash' field taken from column 1 NOTE: this CREATES the 'id'
                 'comment': 3,
-                'date.created': 2,  
+                
+                # Lets convert the date string at index 2 into a python datetime
+                'date.created': (2, lambda v: date_from_str(v)),
                 },
             # 'normal' fields are simply added to the result
             'from_whitelist.csv': True,
-            'counter': counter,                                 # THIS, IS, PYTHON
-            'date.retrieved': lambda v: str(datetime.utcnow()), # yes, we can
+            'counter': counter,                             # Count each time a remapping occurs
+            'date.retrieved': lambda v: datetime.utcnow(),  # here we need a lambda adapter to ignore the argument
             },
-    },
+    }],
     cache=None,
 }
 ```
@@ -103,8 +105,10 @@ Returns:
 ## Installation
 1. Install and start ElasticSearch
 1. Install python3.6 or newer
-1. Install required modules: `pip install flask requests pyaml`
-1. Test hachit `python3.6 flask_app.py` (hachit runs a few basic tests as it loads)
+1. Install required modules: `pip install flask pyyaml`
+1. Install __strongly recommended__ modules: `pip install requests elasticsearch`
+1. Run hachit's unittests `python3.6 tests.py`
+1. Test hachit `python3.6 flask_app.py`
 
 To really improve things, use a real webserver stack like nginx + gunicorn:
 
@@ -117,11 +121,20 @@ make -j
 sudo make altinstall
 ```
 
+To install gunicorn, flask requests and PyYaml
 ```
 python3.6 -m venv $HOME/venv 
 . ~/venv/bin/activate
 pip install -U pip
-pip install gunicorn
-pip install flask requests
+pip install gunicorn flask requests pyyaml elasticsearch
 ```
+
+Run a debug werkzeug instance 
+```
+cd ~/hachit/src
+python3 flask_app.py
+```
+
+Run a test:
+`curl localhost:5000/whitelist?hash=41e25e514d90e9c8bc570484dbaff62b`
 

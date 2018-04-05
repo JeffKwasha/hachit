@@ -5,9 +5,11 @@ Flask api for Hachit.
 """
 
 from werkzeug.exceptions import BadRequest
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request
 from doc import Doc
 from pprint import pformat
+from datetime import datetime, date
+import json
 
 #from config import Config
 #logger = Config.getLogger(__name__)
@@ -24,12 +26,12 @@ def query(path):
     except ValueError as e:
         return "Error: <{}>".format(e)
     except BadRequest as e:
-        return jsonify({ "Error": "Bad Request <{}>".format(e) })
+        return json.dumps({ "Error": "Bad Request <{}>".format(e) })
     if not src:
-        return jsonify([ "Error: Unknown API endpoint <{}>".format(path),
+        return json.dumps([ "Error: Unknown API endpoint <{}>".format(path),
                          Doc.urls()])
     #logger.info(pformat(request.values))
     rv = src.query(request.values)
     #logger.info(pformat(rv))
-    return jsonify(rv)
+    return json.dumps(rv, default=lambda v: v.isoformat() if type(v) in (datetime, date) else None)   # TODO I need to jsonify dates, but not the way jsonify does it.
 

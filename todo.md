@@ -1,8 +1,6 @@
 Current Goals for v1.0:
 * locations can reference inputs AND docs
 * Documentation (is it realistic to think anyone understands Mapper from looking at plugins?)
-* Mapper
-	* default 'None' value for REMAP/eval, ie: "" to prevent consumer having to check everything
 * cleanup Plugins for release
 	* release plugins should exhibit all features:
 		* Mapper DISCARD
@@ -26,7 +24,7 @@ Future Features:
 * query 'solver' - user supplies one parameter - solver looks up compatible inputs, gets&translates results, queries compatible inputs, LOOP
 * automatic look ahead and resolution for selecting a list entry in 'drill down' REMAPs - possibly by looping and checking the recursive return value
 * Warnings:
-	* Redundant Caching
+	* Redundant Cache detection (child and parent)
 	* name / filename mismatch
 * Cache Ageing and updates
 * Better error messages for plugins
@@ -48,3 +46,9 @@ Future Features:
     * Automatic handling/re-indexing when plugins change field types
     * Specifying field types and analyzers might provide secondary utility
     * Possibly 'cleaup' of old unused records
+* Mapper
+    * somehow support a list of values without a lambda function
+    * More intuitive syntax: Maybe nix (REMAP, DISCARD) for a magical find() and del():
+        * { 'newKey' : find('oldKey', 2, lambda v: [v for i,v in v.items() if regex.match(r'match_pattern')(i)] ) }
+
+* Track Failures and retry

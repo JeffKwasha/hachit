@@ -115,4 +115,5 @@ def _test():
     csvin = Input(**d)
     from pprint import pprint as pp
     return csvin.get('41e25e514d90e9c8bc570484dbaff62b')['name'] == 'cmd.exe'
+
 # vim ts=4 sw=4

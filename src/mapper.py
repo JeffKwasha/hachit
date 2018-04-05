@@ -108,13 +108,13 @@ class Mapper:
         # remap the input data (effectively deleting anything not listed)
         if self.remap:
             rv = search(self.remap, data, invalid=self.invalid)
-        elif data:
+        elif self.discard and isinstance(data, dict):
             rv = deepcopy(data)
         else:
             rv = {}
         # add the static fields 
         if self.fields:
-            eval_field(rv, self.fields, rv)
+            eval_field(rv, self.fields, rv or data)
         # delete any discards
         self._discards(self.discard, rv)
         return rv

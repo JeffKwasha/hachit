@@ -1,8 +1,8 @@
 # https://github.com/elastic/elasticsearch-py
-from datetime import datetime
 from elasticsearch import Elasticsearch, ConnectionTimeout, NotFoundError
 from input import Input
 from config import Config
+from mapper import Mapper
 from pprint import pformat
 logger = Config.getLogger(__name__)
 
@@ -14,9 +14,8 @@ class ElasticInput(Input):
         if type(self.data) is dict:
             self.data = Mapper(self.data)
         if type(self.location) is not str:
-            self.location = Mapper(self.location)(self)
-            self.location = self.location(kwargs)
-        self.location = Elasticsearch(self.location) # TODO url=self.location, ssl_context, http_auth
+            self.location = Mapper(self.location)(kwargs)
+        self.location = Elasticsearch(**self.location) # TODO url=self.location, ssl_context, http_auth
 
 
     def query(self, dic):
@@ -52,3 +51,4 @@ class ElasticInput(Input):
 #    def __next__(self):                 return self.results.__next__()
 
 ElasticInput.register()
+

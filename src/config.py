@@ -261,3 +261,4 @@ class Config:
         if type(minval) in (int, float):
             cls.config[key] = max(cls.config.get(key), minval)
         return cls.config.get(key)
+

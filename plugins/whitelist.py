@@ -4,6 +4,7 @@
 #       This eliminates any need for us to 'from doc import Doc', which is good.
 
 from datetime import datetime
+from utils import date_from_str
 
 def counter(*args):
     global count
@@ -24,15 +25,15 @@ doc = {
 
         # 'data' is a 'Mapper': it massages the raw input data into the document's format
         'data': {
-            'REMAP': {   # REMAP instructs the Mapper to name outputs directly from inputs
+            'REMAP': {      # REMAP instructs the Mapper to name outputs directly from inputs
                 'name': 0,  #   our output dictionary will have a 'name' field taken from column 0
                 'hash': 1,  #   and a 'hash' field taken from column 1
-                'date.created': 2,
+                'date.created': (2, lambda v: date_from_str(v)),
                 'comment': 3,
             },
             'from_whitelist': True, # this field will simply be copied
-            'counter': counter,                                 # THIS, IS, PYTHON
-            'date.retrieved': lambda v: str(datetime.utcnow()), # yes, we can
+            'counter': counter,                            # THIS, IS, PYTHON
+            'date.retrieved': lambda v: datetime.utcnow(), # yes, we can
         },
     },
 }
