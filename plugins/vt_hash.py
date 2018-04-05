@@ -1,8 +1,7 @@
 # This hachit plugin defines the API for VirusTotal file hash data
 
-# md5sum cmd.exe: 41e25e514d90e9c8bc570484dbaff62b
 from secrets import VT_API_KEY, TrustedMSRootThumbprints, TrustedOrganizations
-from utils import date_from_str
+from utils import date_from_str, epoch_from_date, date_from_epoch
 
 def is_goodware(v):
     for li in v:
@@ -50,9 +49,9 @@ doc={
         },
         'data': {
             'REMAP': {
-                "vt_file_scan_date"         : ('scan_date', lambda v: date_from_str(v)),
-                "vt_file_first_seen"        : ('first_seen', lambda v: date_from_str(v)),
-                "vt_file_last_seen"         : ('last_seen', lambda v: date_from_str(v)),
+                "vt_file_scan_date"         : ('scan_date', lambda v: epoch_from_date(date_from_str(v))),
+                "vt_file_first_seen"        : ('first_seen',lambda v: epoch_from_date(date_from_str(v))),
+                "vt_file_last_seen"         : ('last_seen', lambda v: epoch_from_date(date_from_str(v))),
                 "vt_file_times_submitted"   : 'times_submitted',
 
                 "vt_file_positives"         : 'positives',
@@ -68,7 +67,7 @@ doc={
                 "vt_file_pe_copyright"      : ('additional_info', 'sigcheck', 'copyright'),
                 "vt_file_pe_original_name"  : ('additional_info', 'sigcheck', 'original name'),
 
-                "vt_file_signature_signing_date"                : ('additional_info', 'sigcheck', 'signing date'),
+                "vt_file_signature_signing_date"                : ('additional_info', 'sigcheck', 'signing date', lambda v: epoch_from_date(date_from_str(v))),
                 "vt_file_signature_description"                 : ('additional_info', 'sigcheck', 'description'),
                 "vt_file_signature_signers"                     : ('additional_info', 'sigcheck', 'signers'),
                 "vt_file_signature_signers_thumbprints"         : ('additional_info', 'sigcheck', 'signers details',
@@ -82,7 +81,7 @@ doc={
                  "vt_file_trusted_microsoft_reason") : ('additional_info','trusted_verdicts', is_goodware),
                 ("vt_file_trusted_microsoft",
                  "vt_file_trusted_microsoft_reason") : ('additional_info','trusted_verdicts', is_goodware),
-                "vt_file_microsoft_trusted" : ('additional_info','trusted_verdicts', checkTrustedVerdicts),
+                 "vt_file_microsoft_trusted" : ('additional_info','trusted_verdicts', checkTrustedVerdicts),
             },
             'from_vt_md5': True,
         },
@@ -95,6 +94,6 @@ doc={
 #            'username': None,
 #            'password': None,
         },
-        'expire_date': '180d',
+        'expire_date': ('vt_file_first_seen', lambda v: double_time(date_from_epoch(v)), 0.5),
     },
 }

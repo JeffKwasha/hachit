@@ -75,10 +75,10 @@ def parse_capacity(s):
                 total += CAPACITIES[k] * float(v)
     return total or int(s)
 
-def epoch(when):
+def epoch_from_date(when):
     return int((when - datetime(1970,1,1)).total_seconds())
 
-def from_epoch(epoch):
+def date_from_epoch(epoch):
     return datetime(1970,1,1) + timedelta(seconds=epoch)
 
 def readdir(path, startswith=None, endswith=None):
@@ -154,24 +154,26 @@ def merge(a, b):
     else:
         logger.info("Couldn't merge: {}/{}".format(type(a), type(b)))
 
-def eval_field(dst, src, args):
+def eval_field(dst, src, args, invalid=None):
     """ Programming is just recursion with different lambda functions 
         here we focus on simple value assignment
     """
     src_t = type(src)
     if src_t is FuncType:
-        return src(args)
+        return src(args) or invalid
     if src_t is dict:
         for k,v in src.items():
-            dst[k] = eval_field({}, v, args)
+            dst[k] = eval_field({}, v, args, invalid)
         return dst
     if src_t is list:
-        return [ eval_field(dst, i, args) for i in src ]
-    if src_t in (str, int, float, bytes, tuple, bool):
-        return src
+        return [ eval_field(dst, i, args, invalid) for i in src ]
+    if src_t is tuple:
+        return search_tuple(src, args, invalid)
+    if src_t in (str, int, float, bytes, bool):
+        return src or invalid
     return dst
 
-def searchStr(needle, haystack, invalid=None):
+def search_str(needle, haystack, invalid=None):
     # str : (lambda k,v: v.get(k) if type(v) is dict else v.index(k)),
     haytype = type(haystack)
     if haytype is dict:
@@ -191,10 +193,10 @@ def search_all(needle, *haystacks, invalid=None):
 def search(needle, haystack, invalid=None):
     from mapper import Mapper
     types = {
-        str: searchStr,
-        int: searchInt,
-        dict: searchDict,
-        tuple: searchTuple,
+        str: search_str,
+        int: search_int,
+        dict: search_dict,
+        tuple: search_tuple,
     }
 
     logger.debug("search: {} in {}".format(needle, haystack))
@@ -206,15 +208,8 @@ def search(needle, haystack, invalid=None):
     except KeyError:
         if callable(needle):
             return needle(haystack)
-        elif isinstance(needle, tuple):
-            # needle is a special tuple, a namedtuple
-            return searchNamedTuple(needle, haystack, invalid)
 
-def searchNamedTuple(needle, haystack, invalid=None):
-    logger.error("I haven't implemented namedtuples yet. They can't easily be specified.")
-    pass
-
-def searchInt(needle, haystack, invalid=None):
+def search_int(needle, haystack, invalid=None):
     """ needle is an Int. Haystack better be indexable """
     try:
         return haystack[needle]
@@ -225,7 +220,7 @@ def searchFunction(func, haystack, invalid=None):
     """ an almost useless wrapper around a function """
     return func(haystack) or invalid
 
-def searchTuple(needle, haystack, invalid=None):
+def search_tuple(needle, haystack, invalid=None):
     """ needle is a iterable of haystack's progeny ie: needle=('a', 'b', 'c'), haystack={ 'a' : { 'b' : { 'c' : "RETURN VAL" }}}
         return a value or None
     """
@@ -252,7 +247,7 @@ def searchTuple(needle, haystack, invalid=None):
         return current
     return invalid
 
-def searchDict(needle, haystack, invalid=None):
+def search_dict(needle, haystack, invalid=None):
     rv = {}
     for k,v in needle.items():
         result = search(v, haystack, invalid)
@@ -288,7 +283,7 @@ def recurse_update(a, b, ignore_none = False):
             a[key] = bVal if bVal or not ignore_none else a[key]
     return a
 
-_date_tr = {
+_date_fmt_to_rgx = {
     r'%%': r'%',
     r'%Y': r'[12][90]\d\d',
     r'%m': r'[01]\d',
@@ -305,39 +300,47 @@ _date_tr = {
     r'%W': r'[0-5]\d',
 }
 def build_date_formats(s):
-    """ Given a strftime format string, Build a list of tuples that allow us to quickly select the right format for a potential date string"""
+    """ Given a list of strftime format strings,
+        Compile [(regex, format_string)...] to allow us to quickly select the right format for a potential date string
+    """
     if not is_sequence(s):
         s = (s,)
     rv = []
     for fmt in s:
         rgx = fmt
-        for k,v in _date_tr.items():
+        for k,v in _date_fmt_to_rgx.items():
             rgx = re.sub(k, v, rgx)
         rv.append((re.compile(rgx), fmt))
     return rv
 
-_date_fmts = build_date_formats([ES_DATE_FORMAT, PY_DATE_FORMAT])
-def date_from_str(s, format=_date_fmts):
-    """ given a date string s, and a format, return a date.
-        format can be a strftime format string or the return value from build_date_formats
+_date_regx_fmts = build_date_formats([ES_DATE_FORMAT, PY_DATE_FORMAT])
+def date_from_str(s, format=_date_regx_fmts):
+    """ given a *potential* date string s and format(s) return a date.
+        format can be a string (strftime format) or a list from build_date_formats
     """
-    if type(s) is not str:
+    if type(s) is not str or not s:
         return s
     if type(format) is str:
         try:
             return datetime.strptime(s, format)
-        except ValueError: return
+        except ValueError:
+            return s
 
     for rx,fmt in format:
         try:
             m = rx.match(s)
             if m: return datetime.strptime(m.group(0), fmt)
-        except ValueError:  pass
+        except ValueError:
+            pass
     return s
 
-def double_time(iso_date_str, mult=1.0):
-    """ Returns a datetime as far from now, as now is from input date """
-    return datetime.utcnow() + mult * (datetime.utcnow() - date_from_str(iso_date_str))
+def double_time(start_date, mult=1.0, format=None):
+    """ Return the datetime: now + mult * (now - start)
+        This is efficient when new things are updated more often than old ones,
+        start_date can be a string if date_from_str will parse it.
+    """
+    now = datetime.utcnow()
+    return now + mult * (now - date_from_str(start_date, format))
 
 def file_lock(f, timeout=2):
     """ True if f was locked, False otherwise """
@@ -466,15 +469,19 @@ def multiple_replace(string, rep_dict):
     pattern = re.compile("|".join([re.escape(k) for k in rep_dict.keys()]), re.M)
     return pattern.sub(lambda x: rep_dict[x.group(0)], string)
 
-def md5(val):
+def md5(*args):
     from hashlib import md5
     m = md5()
-    m.update(val)
+    for v in args:
+        v = v.encode() if type(v) is str else v
+        m.update(v)
     return m.hexdigest()
 
 def sha256(val):
     from hashlib import sha256
     m = sha256()
-    m.update(val)
+    for v in args:
+        v = v.encode() if type(v) is str else v
+        m.update(v)
     return m.hexdigest()
 

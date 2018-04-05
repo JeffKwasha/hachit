@@ -2,34 +2,24 @@ from inputs import api_input, cache_input
 
 doc={'name':'api_test',
      'inputs': {
-         'type': 'https:',
-         'name': 'vt_hash_test',
+         'location' : 'white.csv',
+         # args maps from the common 'data' fields into source specific fields
+         #     Here CsvInput only knows how to use one value - a dictionary key we name with 'id'
+         #     I hope to eliminate args (for most cases) in the future as it is redundant with 'data'
          'id': 'hash',
-         'location' : {
-             'url': 'https://www.virustotal.com/vtapi/v2/file/report',
-             'params': {
-                 'apikey' : 'c1ce0d366721e43fd0c4f983da408feb79a2db54e164d47346691e9c9b575aa3',
-                 'resource': lambda args: args.get('hash'),
-                 'allinfo': '1',
-             },
-             #'headers':None,
-             'errors' : {
-                 200: "OK",
-                 403: "Bad request params",
-                 404: "File not found... ?",
-                 500: "Permanent fail",
-             },
-         },
+
+         # data maps from the source specific fields into common 'data' fields that will be added to the 'Doc'
+         #     A Mapper encapsulates this translation
          'data': {
+             'DISCARD' : ['comment'],
              'REMAP': {
-                 "scan_date"         : 'scan_date',
-                 "first_seen"        : 'first_seen',
-                 "last_seen"         : 'last_seen',
-                 "times_submitted"   : 'times_submitted',
-                 "positives"         : 'positives',
-                 "sha256"            : 'sha256',
-                 "permalink"         : 'permalink',
+                 'name': 0,
+                 'hash': 1,
+                 'date.created': (2, lambda v: date_from_str(v)),
+                 'comment': 3,
              },
+             'from_csv_input': True,
+             'comment_hash': ('comment', lambda v: md5(v)),
          },
      },
      'cache': {

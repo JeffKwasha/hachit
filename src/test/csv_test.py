@@ -1,8 +1,6 @@
-#from config import Config
-#from source import Source
-#from datetime import datetime
 from doc import Doc
 from inputs import csv_input    # test framework doesn't load all the plugins/inputs
+from utils import date_from_str, md5
 
 #autotype: File, URL( HTTP, DB ), graphQL(HTTP POST)
 #   DB - DBinput query string? - slot in the fields
@@ -38,10 +36,11 @@ Doc(name='csv_test',
             'REMAP': {
                 'name': 0,
                 'hash': 1,
-                'date.created': 2,
+                'date.created': (2, lambda v: date_from_str(v)),
                 'comment': 3,
                 },
-            'from': 'csv_input',
+            'from_csv_input': True,
+            'nonce': ('comment', lambda v: md5(v)),
             },
         }],
 )

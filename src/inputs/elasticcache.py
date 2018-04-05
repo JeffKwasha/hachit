@@ -2,12 +2,25 @@ from datetime import datetime, timedelta
 from elasticsearch import ConnectionTimeout
 from elasticinput import ElasticInput
 from config import Config
-from utils import parse_duration, date_from_str
+from utils import parse_duration, date_from_str, ES_DATE_FORMAT
 logger = Config.getLogger(__name__)
 
 FuncType = type(lambda v:v)
 
-def _ed_fn(expire_date, dic):
+def _expired(dic):
+    expire_date=dic.get('EXPIRE_DATE')
+    if not expire_date:
+        return None
+    if datetime.utcnow() > datetime.strptime(expire_date, ES_DATE_FORMAT):
+        return True
+
+def _smart_date_fn(expire_date, dic):
+    """ Allows 'expire_date' to be 'smart':
+        '1w' -> 1 week from now
+        50 -> 50 hours from now
+        lambda v: datetime(...) -> as specified
+        lambda v: timedelta(...) -> timedelta from now
+    """
     if callable(expire_date):
         expire_date = expire_date(dic)
     val_t = type(expire_date)
@@ -24,7 +37,6 @@ _ed_map = {
     str:       lambda ex_v, dic: datetime.utcnow().replace(microsecond=0) + parse_duration(ex_v),
     timedelta: lambda ex_v, dic: datetime.utcnow().replace(microsecond=0) + ex_v,
     datetime:  lambda ex_v, dic: ex_v,
-    FuncType:  _ed_fn,
 }
 class ElasticCache(ElasticInput):
     __slots__= ['count', 'expire_date']
@@ -38,22 +50,20 @@ class ElasticCache(ElasticInput):
 
     def query(self, dic):
         rv = super().query(dic)
-        expire = rv.get('EXPIRE_DATE')
-        if expire and datetime.utcnow() > expire:
+        if _expired(rv):
             return None
         return rv
 
     def get(self, index, default={}):
         rv = super().get(index, default)
-        expire = date_from_str(rv.get('EXPIRE_DATE'))
-        if expire and datetime.utcnow() > expire:
+        if _expired(rv):
             return None
         return rv
 
     def set(self, index, value):
         try:
             if self.expire_date:
-                value['EXPIRE_DATE'] = _ed_fn(self.expire_date, value)
+                value['EXPIRE_DATE'] = _smart_date_fn(self.expire_date, value)
             rv = self.location.index(index=self.name, doc_type=self.name, id=index, body=value)
         except ConnectionTimeout:
             logger.warning('Connection timeout setting: {} [{}]'.format(self.name, index))
@@ -67,7 +77,7 @@ class ElasticCache(ElasticInput):
             pass
 
     def expire(self):
-        # create a query and run delete_from_query(query)
+        # create an ES query, run delete_from_query(query)
         # TODO(Expiration_v2)
         pass
 

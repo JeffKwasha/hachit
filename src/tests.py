@@ -1,5 +1,6 @@
 import unittest
 import os
+from datetime import datetime, timedelta
 from pprint import pprint as pp
 from config import Config
 from utils import *
@@ -53,9 +54,8 @@ class testUtils(unittest.TestCase):
         return
 
     def test_time(self):
-        from datetime import datetime, timedelta
-        self.assertEqual(datetime(1970, 1, 1) + timedelta(seconds=100), from_epoch(100) )
-        self.assertEqual(epoch(datetime(1970, 1, 2)), timedelta(days=1).total_seconds())
+        self.assertEqual(datetime(1970, 1, 1) + timedelta(seconds=100), date_from_epoch(100) )
+        self.assertEqual(epoch_from_date(datetime(1970, 1, 2)), timedelta(days=1).total_seconds())
 
     def test_recurse_update(self):
         a = { 
@@ -118,7 +118,11 @@ class testInput(unittest.TestCase):
         module = Config.load_plugin('test/csv_test.py')
         doc = Doc.from_url("csv_test")
         result = doc.query( { 'hash' : '41e25e514d90e9c8bc570484dbaff62b' } )
-        self.assertEqual( result, {'name':'cmd.exe', 'hash':'41e25e514d90e9c8bc570484dbaff62b', 'from': 'csv_input', 'date.created':'2018-02-20T11:23:00Z'}  )
+        self.assertEqual( result, {'name':'cmd.exe',
+                                   'hash':'41e25e514d90e9c8bc570484dbaff62b',
+                                   'from_csv_input': True,
+                                   'date.created': datetime(2018,2,20,11,23,0),
+                                   'nonce' : 'ca79d9cbb8c73cbe610dfa05030a2183'} )
                 
 class testMapper(unittest.TestCase):
     def test_discard(self):

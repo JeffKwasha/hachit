@@ -33,7 +33,7 @@ doc = {
             },
             'from_whitelist': True, # this field will simply be copied
             'counter': counter,                            # THIS, IS, PYTHON
-            'date.retrieved': lambda v: datetime.utcnow(), # yes, we can
+            'date.retrieved': lambda v: datetime.utcnow().replace(microsecond=0), # yes, we can
         },
     },
 }
