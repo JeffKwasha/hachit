@@ -1,7 +1,7 @@
 # This hachit plugin defines the API for VirusTotal file hash data
 
 from secrets import VT_API_KEY, TrustedMSRootThumbprints, TrustedOrganizations
-from utils import date_from_str, epoch_from_date, date_from_epoch
+from utils import date_from_str, epoch_from_date, date_from_epoch, double_time
 
 def is_goodware(v):
     for li in v:
@@ -48,6 +48,7 @@ doc={
             },
         },
         'data': {
+            'INVALID': '',
             'REMAP': {
                 "vt_file_scan_date"         : ('scan_date', lambda v: epoch_from_date(date_from_str(v))),
                 "vt_file_first_seen"        : ('first_seen',lambda v: epoch_from_date(date_from_str(v))),
@@ -94,6 +95,6 @@ doc={
 #            'username': None,
 #            'password': None,
         },
-        'expire_date': ('vt_file_first_seen', lambda v: double_time(date_from_epoch(v)), 0.5),
+        'expire_date': lambda v: double_time(date_from_epoch(v.get('vt_file_first_seen')), 0.5),
     },
 }

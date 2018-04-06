@@ -11,7 +11,7 @@ def _expired(dic):
     expire_date=dic.get('EXPIRE_DATE')
     if not expire_date:
         return None
-    if datetime.utcnow() > datetime.strptime(expire_date, ES_DATE_FORMAT):
+    if datetime.utcnow() > datetime.strptime(expire_date[:19], ES_DATE_FORMAT):
         return True
 
 def _smart_date_fn(expire_date, dic):
@@ -26,7 +26,7 @@ def _smart_date_fn(expire_date, dic):
     val_t = type(expire_date)
     fn = _ed_map.get(val_t)
     if fn:
-        return fn(expire_date, dic)
+        return fn(expire_date, dic).replace(microsecond=0)
     return None
 
 _ed_map = {
