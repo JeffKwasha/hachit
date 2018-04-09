@@ -23,8 +23,6 @@ class CsvInput(Input):
         In a multiprocess environment (uwsgi) each process will have its 
         own copy in memory (processes can't share). Please keep csv data to a minimum.
     """
-    # NOTE: unix_dialect requires python 3.2
-    #dialect = csv.register_dialect('myDialect', csv.unix_dialect, quoting=csv.QUOTE_MINIMAL)
     subtypes = ('csv',)
     __slots__ = ()
 
@@ -40,12 +38,14 @@ class CsvInput(Input):
             basename = os.path.basename(filename)
             self.name= os.path.splitext(basename)
             pass
-        self.data = self._read(
+        try:
+            self.data = self._read(
                 filename  = filename,
                 id_name   = self.id_name,
                 mapper = Mapper(self.data),
-                # fieldnames= kwargs.get('fieldnames') # leave None if the csv has a header line 
             )
+        except:
+            raise NotFound("Unable to read {}".format(filename))
 
     def _read(self, filename, id_name, mapper=None):
         """ read a csv file. Return a dictionary of mapped rows """

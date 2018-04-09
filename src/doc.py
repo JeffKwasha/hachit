@@ -23,7 +23,11 @@ class Doc:
         if self.name in Doc._all:
             raise Exception("Doc: name collision: {}".format(self.name))
         self.id_name = id
-        self.cache = Input(name=self.name, id=self.id_name, **cache) if cache else None
+        try:
+            self.cache = Input(name=self.name, id=self.id_name, **cache) if cache else None
+        except NotFound:
+            logger.warning("Unable to load cache for {}".format(self.name))
+            self.cache = None
         self._query_config = kwargs.get('query')
         self._input_config = inputs
         try:

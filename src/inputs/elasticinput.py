@@ -1,10 +1,15 @@
 # https://github.com/elastic/elasticsearch-py
-from elasticsearch import Elasticsearch, ConnectionTimeout, NotFoundError
-from input import Input
-from config import Config
-from mapper import Mapper
 from pprint import pformat
+from elasticsearch import Elasticsearch, ConnectionTimeout, NotFoundError, ImproperlyConfigured, ConnectionError, TransportError
+from input import Input
+from exceptions import NotFound
+from mapper import Mapper
+from config import Config
 logger = Config.getLogger(__name__)
+
+import logging
+logging.getLogger('elasticsearch').setLevel(logging.ERROR)
+logging.getLogger('urllib3').setLevel(logging.ERROR)
 
 class ElasticInput(Input):
     __slots__= []
@@ -15,8 +20,16 @@ class ElasticInput(Input):
             self.data = Mapper(self.data)
         if type(self.location) is not str:
             self.location = Mapper(self.location)(kwargs)
-        self.location = Elasticsearch(**self.location) # TODO url=self.location, ssl_context, http_auth
-
+        try:
+            es = Elasticsearch(**self.location, request_timeout=0.2, retries=False, ignore=404) # TODO url=self.location, ssl_context, http_auth
+            es.info()
+            self.location = es
+        except ImproperlyConfigured as e:
+            raise NotFound("ElasticSearch rejected {}\n-----\n\t{}".format(pformat(self.location),e))
+        except TransportError as e:
+            raise NotFound("Failed to reach ElasticSearch at {}\n-----\n\t{}".format(pformat(self.location),e.error))
+        except:
+            raise NotFound("Unable to connect to ElasticSearch at host:{}".format(self.location.get('host')))
 
     def query(self, dic):
         assert(type(dic) is dict)

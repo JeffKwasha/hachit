@@ -1,6 +1,7 @@
 from datetime import datetime, timedelta
 from elasticsearch import ConnectionTimeout
 from elasticinput import ElasticInput
+from exceptions import NotFound
 from config import Config
 from utils import parse_duration, date_from_str, ES_DATE_FORMAT
 logger = Config.getLogger(__name__)
@@ -44,7 +45,11 @@ class ElasticCache(ElasticInput):
     def __init__(self, name, **kwargs):
         super().__init__(name=name, **kwargs)
         # create an index in elasticsearch, ignore status code 400 (index already exists)
-        self.location.indices.create(index=self.name, request_timeout=1.0, ignore=400)
+        if self.location:
+            print("-=-=-=-=\n{}".format(self.location))
+            self.location.indices.create(index=self.name, request_timeout=1.0, ignore=400)
+        else:
+            raise NotFound("Unable to connect to ElasticSearch")
         # expire_date - a function(data) that returns the date this data should expire
         self.expire_date = kwargs.get('expire_date')
 
